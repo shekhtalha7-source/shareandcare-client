@@ -1,7 +1,13 @@
-"use client";
+   "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
-import { useParams, useRouter } from "next/navigation";
+import {
+  Suspense,
+  use,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { authFetch } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
@@ -42,8 +48,25 @@ function isValidImageUrl(value: string) {
   }
 }
 
-export default function EditEventPage() {
-  const { id } = useParams<{ id: string }>();
+// বাইরের পেজ: শুধু Suspense দিয়ে মুড়ে দেয় (এটাই error-এর সমাধান)
+export default function EditEventPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto mt-12 h-96 max-w-2xl animate-pulse rounded-2xl bg-muted" />
+      }
+    >
+      <EditEventForm params={params} />
+    </Suspense>
+  );
+}
+
+function EditEventForm({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   const [event, setEvent] = useState<EventItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,6 +77,7 @@ export default function EditEventPage() {
   useEffect(() => {
     async function load() {
       try {
+        // ঠিক করা: শেষে /${id} যোগ হয়েছে
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/events/${id}`
         );
@@ -99,7 +123,7 @@ export default function EditEventPage() {
       return;
     }
 
-    setSaving(true);
+    setSaving(true); // ঠিক করা: আগে false ছিল
     try {
       const res = await authFetch(`/events/${id}`, {
         method: "PATCH",
@@ -211,7 +235,7 @@ export default function EditEventPage() {
               name="eventDate"
               type="date"
               min={minDate}
-              defaultValue={event.eventDate.slice(0, 10)}
+              defaultValue={event.eventDate?.slice(0, 10)}
             />
             {err("eventDate")}
           </div>

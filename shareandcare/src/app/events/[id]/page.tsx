@@ -1,95 +1,121 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { connection } from "next/server";
-import { getEventById } from "@/lib/api";
+import { ArrowLeft, CalendarDays, MapPin, Tag, User } from "lucide-react";
 import JoinButton from "@/components/JoinButton";
+import { getEventById } from "@/lib/api";
 
-type Params = Promise<{ id: string }>;
-
-async function EventDetailsContent({ params }: { params: Params }) {
-  await connection();
-
-  const { id } = await params;
+async function EventDetails({ id }: { id: string }) {
   const event = await getEventById(id);
-
   if (!event) notFound();
 
-  const date = new Date(event.eventDate);
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-  const isExpired = date < startOfToday;
-
-  const formattedDate = date.toLocaleDateString("en-GB", {
+  const date = new Date(event.eventDate).toLocaleDateString("en-GB", {
+    weekday: "long",
     day: "numeric",
-    month: "short",
+    month: "long",
     year: "numeric",
   });
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
-      <Link
-        href="/events"
-        className="text-sm text-muted-foreground hover:text-foreground"
-      >
-        ← Back to events
-      </Link>
-
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={event.thumbnail}
-        alt={event.title}
-        className="mt-6 h-72 w-full rounded-2xl object-cover sm:h-96"
-      />
-
-      <div className="mt-6 flex flex-wrap items-center gap-3">
-        <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-500">
-          {event.eventType}
-        </span>
-        {isExpired && (
-          <span className="rounded-full bg-red-500/10 px-3 py-1 text-xs font-medium text-red-500">
-            Ended
+    <>
+      <div className="relative mt-5 overflow-hidden rounded-3xl">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={event.thumbnail}
+          alt={event.title}
+          className="h-64 w-full bg-muted object-cover sm:h-96"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+        <div className="absolute bottom-0 p-6 text-white sm:p-8">
+          <span className="rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold">
+            {event.eventType}
           </span>
-        )}
+          <h1 className="mt-3 text-2xl font-bold tracking-tight sm:text-4xl">
+            {event.title}
+          </h1>
+        </div>
       </div>
 
-      <h1 className="mt-4 text-3xl font-bold tracking-tight">{event.title}</h1>
+      <div className="mt-10 grid gap-8 lg:grid-cols-3">
+        <section className="lg:col-span-2">
+          <h2 className="text-xl font-semibold">About this event</h2>
+          <p className="mt-3 whitespace-pre-line leading-relaxed text-muted-foreground">
+            {event.description}
+          </p>
+        </section>
 
-      <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-muted-foreground">
-        <p>📍 {event.location}</p>
-        <p>📅 {formattedDate}</p>
-      </div>
-
-      <p className="mt-6 leading-relaxed text-muted-foreground">
-        {event.description}
-      </p>
-
-      <div className="mt-8">
-        {isExpired ? (
-          <button
-            disabled
-            className="w-full cursor-not-allowed rounded-lg bg-muted px-4 py-3 text-muted-foreground sm:w-auto"
-          >
-            Event ended
-          </button>
-        ) : (
+        <aside className="h-fit space-y-5 rounded-2xl border bg-card p-6 shadow-sm lg:sticky lg:top-24">
+          <h2 className="font-semibold">Event details</h2>
+          <ul className="space-y-4 text-sm">
+            <li className="flex gap-3">
+              <CalendarDays className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+              <div>
+                <p className="text-muted-foreground">Date</p>
+                <p className="font-medium">{date}</p>
+              </div>
+            </li>
+            <li className="flex gap-3">
+              <MapPin className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+              <div>
+                <p className="text-muted-foreground">Location</p>
+                <p className="font-medium">{event.location}</p>
+              </div>
+            </li>
+            <li className="flex gap-3">
+              <Tag className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+              <div>
+                <p className="text-muted-foreground">Type</p>
+                <p className="font-medium">{event.eventType}</p>
+              </div>
+            </li>
+            <li className="flex gap-3">
+              <User className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+              <div className="min-w-0">
+                <p className="text-muted-foreground">Organiser</p>
+                <p className="break-all font-medium">{event.creatorEmail}</p>
+              </div>
+            </li>
+          </ul>
           <JoinButton eventId={event._id} />
-        )}
+        </aside>
       </div>
+    </>
+  );
+}
+
+function DetailsSkeleton() {
+  return (
+    <div className="mt-5 space-y-6">
+      <div className="h-64 animate-pulse rounded-3xl bg-muted sm:h-96" />
+      <div className="h-6 w-1/3 animate-pulse rounded bg-muted" />
+      <div className="h-24 animate-pulse rounded bg-muted" />
     </div>
   );
 }
 
-export default function EventDetailsPage({ params }: { params: Params }) {
+export default function EventDetailsPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   return (
-    <Suspense
-      fallback={
-        <div className="py-20 text-center text-muted-foreground">
-          Loading event...
-        </div>
-      }
-    >
-      <EventDetailsContent params={params} />
-    </Suspense>
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <Link
+        href="/events"
+        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-emerald-500"
+      >
+        <ArrowLeft className="size-4" />
+        Back to events
+      </Link>
+
+      <Suspense fallback={<DetailsSkeleton />}>
+        <DetailsLoader params={params} />
+      </Suspense>
+    </div>
   );
+}
+
+async function DetailsLoader({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <EventDetails id={id} />;
 }

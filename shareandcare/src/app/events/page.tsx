@@ -3,10 +3,11 @@ import EventCard from "@/components/EventCard";
 import EventFilters from "@/components/EventFilters";
 import { getEvents } from "@/lib/api";
 
-export const metadata = { title: "Upcoming Events | ShareAndCare" };
-type SearchParams = Promise<{ search?: string; type?: string }>;
-
-async function EventsContent({ searchParams }: { searchParams: SearchParams }) {
+async function EventList({
+  searchParams,
+}: {
+  searchParams: Promise<{ search?: string; type?: string }>;
+}) {
   const { search = "", type = "" } = await searchParams;
   const events = await getEvents({ search, type });
 
@@ -34,7 +35,7 @@ async function EventsContent({ searchParams }: { searchParams: SearchParams }) {
 export default function EventsPage({
   searchParams,
 }: {
-  searchParams: SearchParams;
+  searchParams: Promise<{ search?: string; type?: string }>;
 }) {
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
@@ -45,12 +46,14 @@ export default function EventsPage({
 
       <Suspense
         fallback={
-          <div className="mt-10 text-center text-muted-foreground">
-            Loading events...
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-80 animate-pulse rounded-2xl bg-muted" />
+            ))}
           </div>
         }
       >
-        <EventsContent searchParams={searchParams} />
+        <EventList searchParams={searchParams} />
       </Suspense>
     </div>
   );
