@@ -117,4 +117,4 @@ The project is deployed on Vercel. Every push to the `main` branch triggers an a
 
 Made by **Shake Talha**
 
-GitHub: https://github.com/shekhtalha7-source
+
